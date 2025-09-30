@@ -1,0 +1,49 @@
+# Core Web Framework
+Flask==3.1.2
+gunicorn==21.2.0
+Werkzeug==3.1.3
+
+# API Integrations
+anthropic==0.68.0
+openai==1.108.0
+requests==2.32.5
+httpx==0.28.1
+
+# E-commerce APIs
+ShopifyAPI==12.7.0
+cloudinary==1.44.0
+
+# Google Services
+google-api-python-client==2.182.0
+google-auth==2.40.3
+google-auth-oauthlib==1.2.2
+gspread==6.2.1
+
+# Database & Storage
+supabase==2.20.0
+pandas==2.3.2
+openpyxl==3.1.5
+
+# Task Scheduling & Background Processing
+schedule==1.2.2
+python-telegram-bot==22.5
+
+# Image Processing
+Pillow==11.3.0
+reportlab==4.4.4
+weasyprint==66.0
+
+# Web Scraping & Automation
+playwright==1.55.0
+beautifulsoup4==4.13.5
+fake-useragent==2.2.0
+
+# Utilities
+python-dotenv==1.1.1
+PyYAML==6.0.2
+click==8.3.0
+tqdm==4.67.1
+
+# Railway-specific
+python-multipart==0.0.6
+psutil==7.1.0
