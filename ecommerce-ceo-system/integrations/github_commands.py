@@ -36,6 +36,19 @@ class GitHubCommandProcessor:
             'commit and push': self.sync_to_github,
             'save to github': self.sync_to_github,
 
+            # Force sync commands (bypass security)
+            'force sync to github': lambda **kwargs: self.sync_to_github(force=True, **kwargs),
+            'force sync github': lambda **kwargs: self.sync_to_github(force=True, **kwargs),
+            'force push to github': lambda **kwargs: self.sync_to_github(force=True, **kwargs),
+            'force upload to github': lambda **kwargs: self.sync_to_github(force=True, **kwargs),
+            'bypass security sync': lambda **kwargs: self.sync_to_github(force=True, **kwargs),
+
+            # Security commands
+            'scan for credentials': self.scan_credentials,
+            'security scan': self.scan_credentials,
+            'check for leaks': self.scan_credentials,
+            'credential scan': self.scan_credentials,
+
             # Status commands
             'check status': self.check_git_status,
             'git status': self.check_git_status,
@@ -110,16 +123,27 @@ class GitHubCommandProcessor:
             logger.error(f"Error processing GitHub command: {e}")
             return {'status': 'error', 'error': str(e)}
 
-    def sync_to_github(self, message: Optional[str] = None, **kwargs) -> Dict:
-        """Sync all changes to GitHub"""
+    def sync_to_github(self, message: Optional[str] = None, force: bool = False, **kwargs) -> Dict:
+        """Sync all changes to GitHub with security scanning"""
         try:
-            logger.info("🔄 Executing: Sync to GitHub")
-            result = self.github.sync_to_github(message=message)
+            logger.info("🔄 Executing: Sync to GitHub with security scan")
+            result = self.github.sync_to_github(message=message, force_upload=force)
 
             if result['status'] == 'success':
+                security_info = result.get('security_scan', {})
                 return {
                     'status': 'success',
-                    'message': '✅ Successfully synced all changes to GitHub',
+                    'message': f'✅ Successfully synced all changes to GitHub\n🔍 Security scan: {security_info.get("files_scanned", 0)} files scanned, {security_info.get("issues_found", 0)} issues found',
+                    'details': result,
+                    'command': 'sync_to_github'
+                }
+            elif result['status'] == 'security_block':
+                return {
+                    'status': 'security_block',
+                    'message': f'🔒 SECURITY BLOCK: Upload prevented due to credential leaks!\n'
+                              f'🔥 Critical issues: {result.get("critical_issues", 0)}\n'
+                              f'🚨 High issues: {result.get("high_issues", 0)}\n'
+                              f'💡 Fix security issues or use "force sync to github" to override',
                     'details': result,
                     'command': 'sync_to_github'
                 }
@@ -139,6 +163,38 @@ class GitHubCommandProcessor:
 
         except Exception as e:
             return {'status': 'error', 'error': str(e), 'command': 'sync_to_github'}
+
+    def scan_credentials(self, **kwargs) -> Dict:
+        """Run security scan for credential leaks"""
+        try:
+            from security_scanner import SecurityScanner
+
+            logger.info("🔍 Executing: Security credential scan")
+
+            # Determine scan directory (use project root)
+            scan_directory = self.github.project_root
+
+            scanner = SecurityScanner()
+            security_report = scanner.scan_directory(scan_directory)
+            scanner.print_report(security_report)
+
+            if security_report['safe_to_upload']:
+                return {
+                    'status': 'success',
+                    'message': f'✅ Security scan completed - SAFE to upload\n🔍 Scanned {security_report["statistics"]["files_scanned"]} files, found {security_report["statistics"]["issues_found"]} issues',
+                    'security_report': security_report,
+                    'command': 'scan_credentials'
+                }
+            else:
+                return {
+                    'status': 'security_issues',
+                    'message': f'🔒 Security scan completed - NOT SAFE to upload\n🔥 Critical issues: {security_report["statistics"]["critical_issues"]}\n🚨 High issues: {security_report["statistics"]["high_issues"]}',
+                    'security_report': security_report,
+                    'command': 'scan_credentials'
+                }
+
+        except Exception as e:
+            return {'status': 'error', 'error': str(e), 'command': 'scan_credentials'}
 
     def check_git_status(self, **kwargs) -> Dict:
         """Check Git repository status"""

@@ -17,6 +17,10 @@ from typing import Dict, List, Optional, Union
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from UNIVERSAL_CREDENTIALS import credentials
 
+# Import security scanner
+sys.path.append(str(Path(__file__).parent))
+from security_scanner import SecurityScanner
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -444,10 +448,43 @@ class GitHubManager:
             logger.error(f"Error getting commit history: {e}")
             return []
 
-    def sync_to_github(self, repo_path: Optional[str] = None, message: Optional[str] = None) -> Dict:
-        """Complete sync to GitHub: add, commit, and push all changes"""
+    def sync_to_github(self, repo_path: Optional[str] = None, message: Optional[str] = None, force_upload: bool = False) -> Dict:
+        """Complete sync to GitHub: security scan, add, commit, and push all changes"""
         try:
             logger.info("🔄 Starting complete GitHub sync...")
+
+            # Determine repository path
+            if repo_path:
+                scan_directory = Path(repo_path)
+            else:
+                scan_directory = self.project_root
+
+            # SECURITY SCAN BEFORE ANY UPLOAD
+            logger.info("🔍 Running security scan before GitHub upload...")
+            scanner = SecurityScanner()
+            security_report = scanner.scan_directory(scan_directory)
+
+            # Check if upload is safe
+            if not security_report['safe_to_upload'] and not force_upload:
+                logger.error("🔒 SECURITY BLOCK: Credential leaks detected!")
+                scanner.print_report(security_report)
+
+                return {
+                    'status': 'security_block',
+                    'error': 'Security scan detected potential credential leaks. Upload blocked for safety.',
+                    'security_report': security_report,
+                    'recommendation': 'Fix security issues or use force_upload=True to override (not recommended)',
+                    'critical_issues': security_report['statistics']['critical_issues'],
+                    'high_issues': security_report['statistics']['high_issues']
+                }
+
+            elif not security_report['safe_to_upload'] and force_upload:
+                logger.warning("⚠️ FORCE UPLOAD: Security issues detected but upload forced!")
+                print("🚨 WARNING: Uploading despite security issues!")
+                scanner.print_report(security_report)
+
+            else:
+                logger.info("✅ Security scan passed - safe to upload")
 
             # Get current status
             status = self.get_repository_status(repo_path)
@@ -483,7 +520,12 @@ class GitHubManager:
                     'status': 'success',
                     'message': 'Successfully synced all changes to GitHub',
                     'details': sync_result,
-                    'files_synced': status.get('changes', 0)
+                    'files_synced': status.get('changes', 0),
+                    'security_scan': {
+                        'status': security_report['status'],
+                        'files_scanned': security_report['statistics']['files_scanned'],
+                        'issues_found': security_report['statistics']['issues_found']
+                    }
                 }
             else:
                 return sync_result
