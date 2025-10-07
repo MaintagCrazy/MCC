@@ -441,12 +441,14 @@ Return ONLY a JSON array of 6 strings (no explanations):
         return bullets[:6]
 
     def generate_html_description(self, product_type: str, style: str, material: str,
-                                 unique_name: str, dimensions: Dict, analysis: Dict) -> str:
+                                 unique_name: str, dimensions: Dict, analysis: Dict,
+                                 color_list: str = "Różne kolory") -> str:
         """Generate HTML description with 5-7 line structured content + AI smart bullets
 
         HYBRID APPROACH:
         - Descriptions: 5-7 structured lines with size intelligence (YOUR PREFERENCE)
         - Bullets: AI-generated competitive bullets that don't repeat description
+        - Actual colors: Uses real color variants from sheet, not generic "Różne kolory"
         """
 
         # Get dimensions with defaults
@@ -605,7 +607,7 @@ Return ONLY a JSON array of 6 strings (no explanations):
   .row .val{{font-size:13px;color:#333;flex:1;text-align:right;white-space:normal}}
 </style>
 <!-- OPIS -->
-<div class="desc">{desc_text} <br><br>Dostępny w wersji: Różne kolory</div>
+<div class="desc">{desc_text} <br><br>Dostępny w wersji: {color_list}</div>
 <!-- BULLET LIST -->
 <ul class="bullet-list">'''
 
@@ -711,6 +713,18 @@ Return ONLY a JSON array of 6 strings (no explanations):
 
                 first_row_num, first_row_data = rows[0]
 
+                # COLLECT ALL COLORS FOR THIS PID (Column E = index 4)
+                colors_for_pid = []
+                for row_num, row_data in rows:
+                    if len(row_data) > 4 and row_data[4]:
+                        color = str(row_data[4]).strip()
+                        if color and color not in colors_for_pid:
+                            colors_for_pid.append(color)
+
+                # Format color list
+                color_list = ", ".join(colors_for_pid) if colors_for_pid else "Różne kolory"
+                print(f"🎨 Colors available: {color_list}")
+
                 # Determine product type based on row range
                 product_type = "unknown"
                 for (range_start, range_end), ptype in product_type_mapping.items():
@@ -788,7 +802,7 @@ Return ONLY a JSON array of 6 strings (no explanations):
                 title = self.create_polish_title(product_type, style, material, unique_name, dim_str)
 
                 description = self.generate_html_description(
-                    product_type, style, material, unique_name, dimensions, analysis
+                    product_type, style, material, unique_name, dimensions, analysis, color_list
                 )
 
                 print(f"✅ Generated: {title}")
