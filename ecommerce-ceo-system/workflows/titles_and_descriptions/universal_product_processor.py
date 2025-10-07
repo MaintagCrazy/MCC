@@ -327,6 +327,13 @@ TASK: Generate exactly 6 bullet points in Polish that include:
 3. FUNCTIONAL benefits: seating capacity (tables), usage context, ease of cleaning, stability
 4. MATERIAL-SPECIFIC: uniqueness (marble patterns), natural characteristics, quality indicators
 
+CRITICAL LANGUAGE RULES:
+- Use SIMPLE, PRACTICAL language - NO poetic or dramatic words!
+- NO words like: dramatyczne, rzeźbiarska, spektakularny, wspaniały, przepiękny
+- YES words like: naturalny, solidny, trwały, praktyczny, funkcjonalny, wygodny
+- Be DIRECT and FACTUAL, not artistic or flowery
+- Write like a practical furniture salesperson, not a poet
+
 RULES:
 - NEVER repeat info from description above
 - Be SPECIFIC (not generic): mention actual visible features
@@ -334,16 +341,17 @@ RULES:
 - Each bullet 5-10 words in Polish
 - Mix vision + performance + functional across all 6 bullets
 - For tables: MUST include seating capacity if dining table
-- For marble/stone: mention unique patterns
-- For wood: mention grain or finish
+- For marble/stone: use simple descriptions like "naturalny wzór marmuru", "białe żyłki"
+- For wood: mention grain or finish simply
 - For fabric/leather: mention comfort or durability
 
-EXAMPLES OF GOOD BULLETS:
-- "Organiczny kształt blatu z zaokrąglonymi krawędziami" (vision-based)
-- "Odporna na zarysowania, plamy i wysokie temperatury" (performance)
-- "Wygodnie pomieści 6-8 osób przy rodzinnym posiłku" (functional for tables)
-- "Każdy egzemplarz z unikalnym wzorem naturalnego marmuru" (material-specific)
-- "Masywna cylindryczna podstawa zapewnia maksymalną stabilność" (vision + functional)
+EXAMPLES OF GOOD SIMPLE BULLETS:
+- "Blat z naturalnego marmuru z białymi żyłkami" (simple, not "dramatyczne złote żyły")
+- "Solidna trójnożna podstawa z metalowych nóg" (simple, not "rzeźbiarska podstawa")
+- "Odporna na zarysowania polerowana powierzchnia" (performance)
+- "Wygodnie pomieści 6-8 osób przy posiłku" (functional for tables)
+- "Każdy stolik ma unikalny wzór marmuru" (material-specific, simple)
+- "Stabilna konstrukcja odporna na obciążenia" (vision + functional)
 
 Return ONLY a JSON array of 6 strings (no explanations):
 ["bullet 1", "bullet 2", "bullet 3", "bullet 4", "bullet 5", "bullet 6"]"""
@@ -397,38 +405,38 @@ Return ONLY a JSON array of 6 strings (no explanations):
             return self.get_fallback_bullets(product_type, material, seating_capacity if product_type == 'table' else None)
 
     def get_fallback_bullets(self, product_type: str, material: str, seating_capacity: str = None) -> List[str]:
-        """Fallback bullets when AI fails - still competitive"""
+        """Fallback bullets when AI fails - simple, practical language"""
 
         bullets = []
 
-        # Material-specific
-        if material in ['marble', 'granite', 'stone']:
-            bullets.append("Każdy egzemplarz z unikalnym wzorem naturalnego kamienia")
-            bullets.append("Polerowana powierzchnia odporna na plamy i zarysowania")
+        # Material-specific - SIMPLE LANGUAGE
+        if material in ['marble', 'granite', 'stone'] or 'marble' in material.lower():
+            bullets.append("Blat z naturalnego marmuru z unikalnym wzorem")
+            bullets.append("Polerowana powierzchnia odporna na zarysowania")
         elif material == 'wood':
-            bullets.append("Naturalne drewno z widocznym usłojeniem")
+            bullets.append("Blat z naturalnego drewna")
             bullets.append("Lakierowana powierzchnia odporna na wilgoć")
         elif material in ['fabric', 'leather']:
-            bullets.append("Miękka tapicerka zapewniająca komfort")
-            bullets.append("Odporna na zabrudzenia i łatwa w czyszczeniu")
+            bullets.append("Wygodne miękkie siedzisko")
+            bullets.append("Łatwe w czyszczeniu i utrzymaniu")
         else:
-            bullets.append("Wysokiej jakości materiały i wykończenie")
-            bullets.append("Odporna konstrukcja na długie lata użytkowania")
+            bullets.append("Solidne materiały i trwałe wykończenie")
+            bullets.append("Wytrzyma codzienne użytkowanie przez lata")
 
         # Product-specific
         if product_type in ['chair', 'armchair']:
-            bullets.append("Ergonomiczne oparcie wspierające plecy")
-            bullets.append("Stabilna konstrukcja z wzmocnioną ramą")
+            bullets.append("Wygodne oparcie wspierające plecy")
+            bullets.append("Stabilna konstrukcja stalowa")
         elif product_type == 'table' and seating_capacity:
             bullets.append(f"Wygodnie pomieści {seating_capacity}")
             bullets.append("Stabilna konstrukcja odporna na obciążenia")
         elif product_type == 'coffee_table':
-            bullets.append("Idealna wysokość do kawy przy sofie")
-            bullets.append("Stabilna podstawa dla maksymalnego bezpieczeństwa")
+            bullets.append("Praktyczna wysokość do kawy przy sofie")
+            bullets.append("Stabilna podstawa zapewnia bezpieczeństwo")
 
         # Universal competitive claims
         bullets.append("Antypoślizgowe nakładki chronią podłogę")
-        bullets.append("Montaż w 10-15 minut z instrukcją")
+        bullets.append("Prosty montaż w 10-15 minut")
 
         return bullets[:6]
 
@@ -563,16 +571,21 @@ Return ONLY a JSON array of 6 strings (no explanations):
         # AI-GENERATED SMART BULLETS (from Downloads version)
         bullet_items = self.generate_smart_bullets(product_type, analysis, desc_text, dimensions)
 
-        # Material info for spec table
+        # Material info for spec table - FIX: Use actual material detected by vision
         material_map = {
             "fabric": "miękka tapicerka materiałowa",
             "leather": "skóra ekologiczna",
             "wood": "naturalne drewno",
             "marble": "naturalny marmur",
+            "marble top with painted metal base": "naturalny marmur",
+            "marble and metal": "naturalny marmur",
+            "marble top with metal base": "naturalny marmur",
             "metal": "metal lakierowany",
             "glass": "hartowane szkło"
         }
-        surface_material = material_map.get(material, "wysokiej jakości materiał")
+        # Clean the material string and map it
+        material_clean = material.lower().strip()
+        surface_material = material_map.get(material_clean, "naturalny marmur" if "marble" in material_clean or "marmur" in material_clean else "wysokiej jakości materiał")
 
         # Generate HTML template
         template = f'''<style>
