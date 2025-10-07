@@ -85,18 +85,18 @@ class UniversalProductProcessor:
     ]
 
     CREATIVE_NAMES = [
-        # Cities
-        "Tokyo", "Milan", "Berlin", "Oslo", "Vienna", "Prague", "London", "Paris",
-        "Stockholm", "Copenhagen", "Helsinki", "Zurich", "Barcelona", "Rome", "Amsterdam",
+        # European Cities - Sophisticated & Furniture-Appropriate
+        "Milan", "Vienna", "Oslo", "Prague", "Paris", "Barcelona", "Rome",
+        "Stockholm", "Copenhagen", "Helsinki", "Zurich", "Berlin", "Amsterdam",
+        "Lyon", "Geneva", "Florence", "Venice", "Monaco", "Dresden", "Lisbon",
+        "Porto", "Madrid", "Brussels", "Munich", "Salzburg", "Turin", "Basel",
 
-        # Abstract/Elements
-        "Zenith", "Echo", "Flux", "Apex", "Nova", "Prism", "Vertex", "Matrix",
-        "Nexus", "Quantum", "Vortex", "Pulse", "Wave", "Orbit", "Crystal",
-
-        # Materials/Minerals
-        "Marble", "Granite", "Quartz", "Onyx", "Slate", "Basalt", "Obsidian",
-        "Ivory", "Graphite", "Mercury", "Cobalt", "Titanium", "Jade", "Crimson",
-        "Azure", "Ember", "Sapphire", "Phoenix", "Atlas", "Orca"
+        # Soft Abstract Concepts - Minimalist & Aesthetic
+        "Echo", "Wave", "Harmony", "Balance", "Clarity", "Unity", "Serenity",
+        "Essence", "Horizon", "Vision", "Legacy", "Spirit", "Radiance",
+        "Dawn", "Dusk", "Mist", "Sky", "Rain", "Cloud", "Breeze",
+        "Grace", "Bloom", "Flow", "Rhythm", "Pulse", "Form", "Line",
+        "Calm", "Still", "Pure", "Soft", "Light", "Shadow", "Shade"
     ]
 
     def get_image_from_url(self, image_url: str) -> Optional[str]:
@@ -156,6 +156,17 @@ IMAGE ANALYSIS - What you actually see:
 9. UNIQUE_FEATURES: What makes this product visually distinctive?
 10. MATERIAL_QUALITY: Visual quality indicators (natural imperfections, uniformity, craftsmanship)
 
+11. PRODUCT NAME - Generate ONE elegant abstract name that resonates with this specific product:
+
+CRITICAL NAME RULES - Tailor name to material personality:
+- **Wood products** → Natural/organic abstracts (one word): Grove, Timber, Grain, Oak, Cedar, Ash, Willow, Birch, Forest, Branch, Beam, Bark, Root, Leaf
+- **Marble/stone products** → Modern/architectural (one word): Axis, Form, Edge, Line, Plane, Structure, Angle, Column, Arc, Peak, Ridge, Crest
+- **Leather products** → Italian/sophisticated (one word): Bellezza, Lusso, Comodo, Morbido, Eleganza, Pelle, Forma, Stile
+- **Fabric/boucle products** → Soft/tactile (one word): Plush, Velvet, Cloud, Nest, Cozy, Soft, Silk, Cashmere, Linen
+
+Generate a UNIQUE name that feels right for THIS specific piece - consider the material, shape, and overall aesthetic!
+Name must be: minimalist, neutral, abstract, sophisticated, furniture-appropriate
+
 Respond in JSON:
 {{
     "corrected_product_type": "table/coffee_table/chair/armchair (use dimensions to verify!)",
@@ -171,7 +182,8 @@ Respond in JSON:
     "unique_features": ["feature1", "feature2", "feature3"],
     "material_quality": "...",
     "dimension_match": "true/false (do dimensions match the product type?)",
-    "confidence": "high/medium/low"
+    "confidence": "high/medium/low",
+    "suggested_name": "one elegant abstract name tailored to this product"
 }}"""
 
             # Call Claude 4.5 Sonnet via OpenRouter
@@ -262,9 +274,9 @@ Respond in JSON:
         self.used_names.add(fallback_name)
         return fallback_name
 
-    def create_polish_title(self, product_type: str, style: str, material: str, unique_name: str, dimensions: str = "") -> str:
+    def create_polish_title(self, product_type: str, style: str, material: str, unique_name: str, dimensions: str = "", shape: str = "") -> str:
         """Create grammatically correct Polish title using the grammar module"""
-        return self.grammar.create_title(product_type, style, material, unique_name, dimensions)
+        return self.grammar.create_title(product_type, style, material, unique_name, dimensions, shape)
 
     def generate_smart_bullets(self, product_type: str, analysis: Dict,
                               description_text: str, dimensions: Dict) -> List[str]:
@@ -778,41 +790,44 @@ Return ONLY a JSON array of 6 strings (no explanations):
                 dimension_match = analysis.get('dimension_match', 'true')
 
                 if corrected_type != product_type:
-                    print(f"⚠️ PRODUCT TYPE CORRECTED: {product_type} → {corrected_type} (dimensions don't match!)")
+                    print(f"⚠️ PRODUCT TYPE CORRECTED: {product_type} → {corrected_type} (based on dimensions!)")
                     product_type = corrected_type
 
                 print(f"👁️ Vision: {material}, {style}, {analysis.get('shape')}, confidence: {analysis.get('confidence')}")
                 print(f"✅ Dimension match: {dimension_match}")
 
-                # Check if name already exists in column F
-                existing_name = first_row_data[5] if len(first_row_data) > 5 else None
+                # USE Claude's context-aware suggested name!
+                unique_name = analysis.get('suggested_name', 'Form')
 
-                if existing_name and existing_name in self.CREATIVE_NAMES:
-                    # Name exists and is valid - use it
-                    unique_name = existing_name
-                    print(f"♻️ Using existing name: {unique_name}")
-                else:
-                    # Generate new unique name
+                # Ensure uniqueness - if name already used, ask Claude to generate another
+                if unique_name in self.used_names:
                     unique_name = self.generate_unique_name(style, material)
-                    print(f"✨ Generated new name: {unique_name}")
+                    print(f"✨ Name collision - using fallback: {unique_name}")
+                else:
+                    self.used_names.add(unique_name)
+                    print(f"✨ Claude suggested name: {unique_name}")
 
-                # Create dimension string for title - ONLY for dining tables, NOT coffee tables
+                # Get shape from Claude analysis
+                shape = analysis.get('shape', '')
+
+                # Create dimension string for ALL tables (coffee tables and dining tables)
                 dim_str = ""
-                if product_type == "table":  # ONLY dining tables get dimensions
+                if product_type in ["table", "dining_table", "coffee_table"]:
                     try:
                         w = float(dimensions['width']) if dimensions['width'] != 'brak danych' else 0
                         d = float(dimensions['depth']) if dimensions['depth'] != 'brak danych' else 0
-                        shape = analysis.get('shape', '')
 
-                        if shape == "okrągły" and w > 0:
-                            dim_str = f"⌀{int(w)}cm"
+                        # Round tables: use single dimension (no diameter symbol)
+                        if shape in ["okrągły", "round"] and w > 0:
+                            dim_str = f"{int(w)}cm"
+                        # Rectangular/square tables: use WxD
                         elif w > 0 and d > 0:
                             dim_str = f"{int(w)}x{int(d)}cm"
                     except:
                         pass
 
-                # Create title with dimensions
-                title = self.create_polish_title(product_type, style, material, unique_name, dim_str)
+                # Create title with dimensions AND shape
+                title = self.create_polish_title(product_type, style, material, unique_name, dim_str, shape)
 
                 description = self.generate_html_description(
                     product_type, style, material, unique_name, dimensions, analysis, color_list
