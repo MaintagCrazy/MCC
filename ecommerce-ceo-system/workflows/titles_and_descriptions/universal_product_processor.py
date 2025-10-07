@@ -74,10 +74,14 @@ class UniversalProductProcessor:
         except Exception as e:
             print(f"⚠️ Warning: Could not load existing names: {e}")
 
-    # Style and naming configurations
+    # Style and naming configurations - TIMELESS AESTHETIC WORDS ONLY
+    # NO salesy words like "luksusowy", "spektakularny", "przepiękny"
     POLISH_ADJECTIVES = [
-        "elegancki", "minimalistyczny", "klasyczny", "nowoczesny",
-        "industrialny", "skandynawski", "rustykalny", "loftowy", "vintage"
+        "minimalistyczny",  # minimalist - timeless
+        "klasyczny",        # classic - timeless
+        "nowoczesny",       # modern - clean
+        "skandynawski",     # Scandinavian - aesthetic
+        "industrialny"      # industrial - aesthetic
     ]
 
     CREATIVE_NAMES = [
@@ -140,7 +144,9 @@ If the dimensions don't match the current classification, CORRECT IT in your res
 
 IMAGE ANALYSIS - What you actually see:
 1. MATERIAL: Primary material? (marble, wood, fabric, leather, metal, glass)
-2. STYLE: Design style? (elegancki, minimalistyczny, klasyczny, nowoczesny, skandynawski, rustykalny, loftowy, vintage)
+2. STYLE: Pick ONLY ONE timeless aesthetic word - NO salesy words!
+   ALLOWED: minimalistyczny, klasyczny, nowoczesny, skandynawski, industrialny
+   FORBIDDEN: luksusowy, elegancki, spektakularny, wspaniały, przepiękny, ekskluzywny
 3. SHAPE: Exact shape? (okrągły/round, prostokątny/rectangular, kwadratowy/square, owalny/oval, organiczny/organic, nieregularny/irregular)
 4. COLOR: Specific color tones and finishes you see
 5. SURFACE_FINISH: (high-gloss/matte/textured/natural/polished)
@@ -758,7 +764,14 @@ Return ONLY a JSON array of 6 strings (no explanations):
                 analysis = self.analyze_product_with_claude(image_url, product_type, dimensions)
 
                 material = analysis.get('material', 'wood')
-                style = analysis.get('style', 'nowoczesny')
+
+                # CLEAN STYLE: Take ONLY first word, ensure it's timeless (no "luksusowy")
+                style_raw = analysis.get('style', 'nowoczesny')
+                # If Claude returned multiple words (e.g., "nowoczesny, luksusowy"), take only first
+                style = style_raw.split(',')[0].strip() if ',' in style_raw else style_raw.strip()
+                # Remove salesy words
+                if style.lower() in ['luksusowy', 'elegancki', 'spektakularny', 'wspaniały', 'ekskluzywny']:
+                    style = 'nowoczesny'  # Default to timeless
 
                 # CHECK IF CLAUDE CORRECTED THE PRODUCT TYPE BASED ON DIMENSIONS
                 corrected_type = analysis.get('corrected_product_type', product_type)
