@@ -639,16 +639,32 @@ Return ONLY a JSON array of 6 strings (no explanations):
 <div class="spec-wrap">
 <!-- Wymiary -->
 <div class="spec-card">
-<h3>Wymiary</h3>
+<h3>Wymiary</h3>'''
+
+        # Add dimension rows ONLY if they have actual values (not "brak danych")
+        if height != 'brak danych':
+            # Remove " cm" if already in the value to avoid "cm cm"
+            height_clean = str(height).replace(' cm', '').replace('cm', '').strip()
+            template += f'''
 <div class="row">
-<span class="label">Wysokość całkowita</span><span class="val">{height} cm</span>
-</div>
+<span class="label">Wysokość całkowita</span><span class="val">{height_clean} cm</span>
+</div>'''
+
+        if width != 'brak danych':
+            width_clean = str(width).replace(' cm', '').replace('cm', '').strip()
+            template += f'''
 <div class="row">
-<span class="label">Szerokość całkowita</span><span class="val">{width} cm</span>
-</div>
+<span class="label">Szerokość całkowita</span><span class="val">{width_clean} cm</span>
+</div>'''
+
+        if depth != 'brak danych':
+            depth_clean = str(depth).replace(' cm', '').replace('cm', '').strip()
+            template += f'''
 <div class="row">
-<span class="label">Głębokość całkowita</span><span class="val">{depth} cm</span>
-</div>
+<span class="label">Głębokość całkowita</span><span class="val">{depth_clean} cm</span>
+</div>'''
+
+        template += f'''
 <div class="subhead">Dostępność i Dostawa</div>
 <div class="row">
 <span class="label">Dostępność</span><span class="val">na stanie w Warszawie</span>
